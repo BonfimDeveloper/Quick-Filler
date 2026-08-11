@@ -1,0 +1,53 @@
+# ==========================================
+# Python
+# ==========================================
+
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Ambiente virtual
+.venv/
+venv/
+env/
+
+# Variáveis de ambiente / segredos
+.env
+.env.*
+!.env.example
+
+# Testes e cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ==========================================
+# Angular / Node
+# ==========================================
+
+node_modules/
+dist/
+.angular/
+.cache/
+
+# ==========================================
+# VS Code / IDE
+# ==========================================
+
+.vscode/
+.idea/
+
+# ==========================================
+# Sistema operacional
+# ==========================================
+
+.DS_Store
+Thumbs.db
+
+# ==========================================
+# Logs e arquivos temporários
+# ==========================================
+
+*.log
+tmp/
+temp/
