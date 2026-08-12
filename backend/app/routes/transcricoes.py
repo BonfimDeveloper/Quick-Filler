@@ -1,7 +1,7 @@
 from typing import Literal
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 from app.services.transcricoes import criar_transcricao, transcricoes
-from app.services.uploads import validar_upload
+from app.services.uploads import salvar_upload, validar_upload
 
 
 router = APIRouter(
@@ -18,6 +18,8 @@ async def criar_transcricao_endpoint(
     await validar_upload(arquivo)
     
     id_transcricao = criar_transcricao(tipo)
+
+    await salvar_upload(arquivo, id_transcricao)
 
     return {
         "id": id_transcricao,
