@@ -1,0 +1,123 @@
+<header class="topbar">
+  <a class="brand" href="/" aria-label="Quick Filler - início">
+    <span class="brand-mark">QF</span>
+    <span>Quick Filler</span>
+  </a>
+  <span class="privacy">Seus documentos ficam protegidos durante a revisão</span>
+</header>
+
+<main>
+  <section class="intro">
+    <div>
+      <p class="eyebrow">Transcrição trabalhista assistida</p>
+      <h1>Do PDF à planilha,<br /><em>com você no controle.</em></h1>
+      <p class="lead">Envie, confira cada valor ao lado do documento e baixe os dados já corrigidos.</p>
+    </div>
+
+    <form class="upload-card" (submit)="$event.preventDefault(); enviar()">
+      <div class="type-toggle" aria-label="Tipo de documento">
+        <button type="button" [class.active]="tipo() === 'cartao-ponto'" (click)="selecionarTipo('cartao-ponto')">Cartão de ponto</button>
+        <button type="button" [class.active]="tipo() === 'holerite'" (click)="selecionarTipo('holerite')">Holerite</button>
+      </div>
+      <label class="file-drop">
+        <input type="file" accept="application/pdf,.pdf" (change)="selecionarArquivo($event)" />
+        <span class="file-icon">PDF</span>
+        <span class="file-copy">
+          <strong>{{ arquivo()?.name || 'Escolha um documento PDF' }}</strong>
+          <small>{{ arquivo() ? 'Pronto para enviar' : 'Até 10 MB' }}</small>
+        </span>
+        <span class="choose">Selecionar</span>
+      </label>
+      <button class="primary" type="submit" [disabled]="!arquivo() || enviando()">
+        {{ enviando() ? 'Enviando…' : 'Transcrever documento' }}
+      </button>
+      @if (mensagem()) { <p class="status" [class.error]="transcricao()?.status === 'erro'">{{ mensagem() }}</p> }
+    </form>
+  </section>
+
+  @if (transcricao()?.status === 'concluido' && transcricao()?.value) {
+    <section class="workspace">
+      <div class="workspace-head">
+        <div>
+          <p class="eyebrow">Revisão</p>
+          <h2>Confira antes de baixar</h2>
+        </div>
+        <div class="actions">
+          <button class="secondary" (click)="salvar()" [disabled]="salvando()">{{ salvando() ? 'Salvando…' : 'Salvar correções' }}</button>
+          <div class="download-group">
+            <button class="primary compact" (click)="baixar('xlsx')">Baixar XLSX</button>
+            <button class="format" title="Baixar CSV" (click)="baixar('csv')">CSV</button>
+            <button class="format" title="Baixar JSON" (click)="baixar('json')">JSON</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="review-grid">
+        <article class="panel pdf-panel">
+          <div class="panel-title"><span>Documento original</span><small>{{ arquivo()?.name }}</small></div>
+          @if (pdfSeguro()) { <iframe [src]="pdfSeguro()" title="Documento PDF original"></iframe> }
+        </article>
+
+        <article class="panel data-panel">
+          <div class="panel-title">
+            <span>Dados extraídos</span>
+            <small>Campos editáveis</small>
+          </div>
+
+          @if (transcricao()?.tipo === 'cartao-ponto') {
+            @for (page of paginasCartao(); track page.page) {
+              <div class="page-label">Página {{ page.page }}</div>
+              <div class="table-scroll">
+                <table>
+                  <thead><tr><th>Data</th><th>Tipo</th><th>Horário original</th><th>Horário</th></tr></thead>
+                  <tbody>
+                    @for (day of page.days; track $index) {
+                      @if (day.punches.length === 0) {
+                        <tr [class.warning]="linhaCartaoTemAviso(day)"><td><input [(ngModel)]="day.date_raw" /></td><td colspan="3" class="empty">Sem batidas</td></tr>
+                      } @else {
+                        @for (punch of day.punches; track $index; let first = $first) {
+                          <tr [class.warning]="linhaCartaoTemAviso(day)">
+                            <td>@if (first) { <input [(ngModel)]="day.date_raw" /> }</td>
+                            <td><select [(ngModel)]="punch.kind"><option value="IN">Entrada</option><option value="OUT">Saída</option></select></td>
+                            <td><input [(ngModel)]="punch.time_raw" /></td>
+                            <td><input [(ngModel)]="punch.time_hhmm" /></td>
+                          </tr>
+                        }
+                      }
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          } @else {
+            @for (page of paginasHolerite(); track page.page) {
+              <div class="page-label" [class.warning-label]="linhaHoleriteTemAviso(page)">Página {{ page.page }} · {{ page.month }}/{{ page.year }}</div>
+              <div class="table-scroll">
+                <table>
+                  <thead><tr><th>Código</th><th>Descrição</th><th>Referência</th><th>Valor</th></tr></thead>
+                  <tbody>
+                    @for (field of page.fields; track $index) {
+                      <tr [class.warning]="field.code.includes('?') || field.label.includes('?') || field.value.includes('?')">
+                        <td><input class="short" [(ngModel)]="field.code" /></td>
+                        <td><input [(ngModel)]="field.label" /></td>
+                        <td><input class="money" [(ngModel)]="field.reference" /></td>
+                        <td><input class="money" [(ngModel)]="field.value" /></td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <div class="bases">
+                @for (base of page.bases; track $index) {
+                  <label><span>{{ base.label }}</span><input [(ngModel)]="base.value" /></label>
+                }
+              </div>
+            }
+          }
+        </article>
+      </div>
+    </section>
+  }
+</main>
+
+<footer><span>Quick Filler</span><span>Revise com segurança. Exporte com confiança.</span></footer>
