@@ -13,9 +13,12 @@ from fastapi import (
 from app.services.transcricoes import (
     atualizar_caminho_arquivo,
     criar_transcricao,
+    excluir_transcricao,
+    listar_transcricoes,
     obter_transcricao as obter_transcricao_service,
     processar_transcricao,
 )
+
 from app.services.uploads import (
     salvar_upload,
     validar_upload,
@@ -66,6 +69,10 @@ async def criar_transcricao_endpoint(
         "id": id_transcricao,
     }
 
+@router.get("")
+async def listar_transcricoes_endpoint():
+    return listar_transcricoes()
+
 
 @router.get("/{id_transcricao}")
 async def obter_transcricao(
@@ -82,3 +89,23 @@ async def obter_transcricao(
         )
 
     return transcricao
+
+
+@router.delete(
+    "/{id_transcricao}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def excluir_transcricao_endpoint(
+    id_transcricao: str,
+):
+    excluida = excluir_transcricao(
+        id_transcricao
+    )
+
+    if not excluida:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Transcrição não encontrada",
+        )
+
+    return None

@@ -9,6 +9,7 @@ from app.extractors.cartao_ponto import extrair_cartao_ponto
 from app.extractors.holerite import extrair_holerite
 from app.models.transcricao import Transcricao
 from app.services.pdf import extrair_texto
+from app.services.uploads import remover_upload
 
 
 def criar_transcricao(
@@ -104,6 +105,78 @@ def atualizar_caminho_arquivo(
 
         db.commit()
 
+
+def listar_transcricoes() -> list[dict]:
+    """
+    Lista todas as transcrições cadastradas.
+
+    A listagem retorna apenas informações resumidas.
+    O conteúdo completo de "value" continua disponível
+    no GET por ID.
+    """
+
+    with SessionLocal() as db:
+        resultado = db.execute(
+            select(Transcricao).order_by(
+                Transcricao.created_at.desc()
+            )
+        )
+
+        transcricoes = resultado.scalars().all()
+
+        return [
+            {
+                "id": transcricao.id,
+                "tipo": transcricao.tipo,
+                "status": transcricao.status,
+                "erro": transcricao.erro,
+                "created_at": transcricao.created_at,
+                "updated_at": transcricao.updated_at,
+            }
+            for transcricao in transcricoes
+        ]
+
+
+
+def excluir_transcricao(
+    id_transcricao: str,
+) -> bool:
+    """
+    Exclui uma transcrição do banco e remove
+    o PDF associado, caso exista.
+
+    Retorna:
+        True  -> transcrição encontrada e excluída
+        False -> transcrição não encontrada
+    """
+
+    with SessionLocal() as db:
+        transcricao = db.get(
+            Transcricao,
+            id_transcricao,
+        )
+
+        if transcricao is None:
+            return False
+
+        caminho_arquivo = (
+            Path(transcricao.caminho_arquivo)
+            if transcricao.caminho_arquivo
+            else None
+        )
+
+        if caminho_arquivo is not None:
+            remover_upload(
+                caminho_arquivo
+            )
+
+        db.delete(
+            transcricao
+        )
+
+        db.commit()
+
+        return True
 
 def processar_transcricao(
     id_transcricao: str,
