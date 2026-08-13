@@ -8,12 +8,45 @@ from app.models.cartao_ponto import CartaoPonto, Day, Punch
 # =========================================================
 
 PADRAO_DIA = re.compile(
-    r"^\s*(\d{1,2})\s*-\s*[A-Z]{3}"
+    r"^\s*"
+    r"(?P<data>\d{1,2}(?:[/-]\d{1,2}(?:[/-]\d{2,4})?)?)"
+    r"\s*(?:-\s*)?[A-ZÀ-ÖØ-Þ]{3}\b"
 )
 
 PADRAO_HORARIO = re.compile(
     r"\b\d{2}:\d{2}\b"
 )
+
+PADRAO_PRIMEIRA_LINHA = re.compile(
+    r"""
+    ^\s*
+    \d{1,2}(?:[/-]\d{1,2}(?:[/-]\d{2,4})?)?
+    \s*(?:-\s*)?
+    [A-ZÀ-ÖØ-Þ]{3}
+    \s+
+    (?P<jornada>\d{2}:\d{2})
+    (?:
+        \s+
+        (?P<entrada>\d{2}:\d{2})
+        \s+
+        (?P<saida>\d{2}:\d{2})
+    )?
+    """,
+    re.VERBOSE,
+)
+
+
+def detectar_layout(texto: str) -> str | None:
+    cabecalho_compacto = re.sub(
+        r"\s+",
+        "",
+        texto.upper(),
+    )
+
+    if "FOLHADEFREQUENCIA" in cabecalho_compacto:
+        return "sipon"
+
+    return None
 
 
 # =========================================================
@@ -118,18 +151,22 @@ def extrair_dias(texto: str) -> list[str]:
 # NÚMERO DO DIA
 # =========================================================
 
-def extrair_numero_dia(
+def extrair_data_raw(
     registro: str,
-) -> int | None:
+) -> str | None:
     """
-    Extrai o número do dia.
+    Extrai a data exatamente como aparece no documento.
 
     Exemplo:
 
         17 - TER 08:00 ...
 
     Retorna:
-        17
+        "17"
+
+    Outros layouts podem imprimir a data completa, como
+    ``17/07/2012``. O valor não é normalizado, pois o contrato
+    exige que ``date_raw`` preserve o conteúdo original.
     """
 
     linhas = registro.splitlines()
@@ -144,7 +181,7 @@ def extrair_numero_dia(
     if not resultado:
         return None
 
-    return int(resultado.group(1))
+    return resultado.group("data")
 
 
 # =========================================================
@@ -199,23 +236,8 @@ def extrair_horarios(
 
     primeira_linha = linhas[0]
 
-    resultado = re.match(
-        r"""
-        ^\s*
-        \d{1,2}
-        \s*-\s*
-        [A-Z]{3}
-        \s+
-        (?P<jornada>\d{2}:\d{2})
-        (?:
-            \s+
-            (?P<entrada>\d{2}:\d{2})
-            \s+
-            (?P<saida>\d{2}:\d{2})
-        )?
-        """,
-        primeira_linha,
-        re.VERBOSE,
+    resultado = PADRAO_PRIMEIRA_LINHA.match(
+        primeira_linha
     )
 
     if resultado:
@@ -356,9 +378,12 @@ def extrair_punches(
 
 def agrupar_dias(
     registros: list[str],
-) -> dict[int, list[str]]:
+) -> dict[str, list[str]]:
     """
-    Agrupa registros pelo número do dia.
+    Agrupa registros pela data impressa.
+
+    A ordem da primeira aparição é preservada para que datas fora
+    de sequência não sejam ocultadas por uma ordenação automática.
 
     Exemplo:
 
@@ -375,19 +400,19 @@ def agrupar_dias(
         }
     """
 
-    dias: dict[int, list[str]] = {}
+    dias: dict[str, list[str]] = {}
 
     for registro in registros:
 
-        numero_dia = extrair_numero_dia(
+        data_raw = extrair_data_raw(
             registro
         )
 
-        if numero_dia is None:
+        if data_raw is None:
             continue
 
         dias.setdefault(
-            numero_dia,
+            data_raw,
             []
         ).append(
             registro
@@ -412,6 +437,13 @@ def extrair_cartao_ponto(
 
     inicia um novo bloco/página/mês.
     """
+
+    layout = detectar_layout(texto)
+
+    if layout is None:
+        raise ValueError(
+            "Layout de cartão de ponto não reconhecido."
+        )
 
     # =====================================================
     # DIVISÃO DAS PÁGINAS
@@ -450,10 +482,6 @@ def extrair_cartao_ponto(
         # MÊS / ANO
         # =================================================
 
-        mes, ano = extrair_mes_ano(
-            bloco
-        )
-
         numero_pagina += 1
 
         # =================================================
@@ -470,13 +498,9 @@ def extrair_cartao_ponto(
         # CRIA OS DAYS
         # =================================================
 
-        for numero_dia in sorted(
-            dias_agrupados.keys()
+        for data_raw, registros_do_dia in (
+            dias_agrupados.items()
         ):
-
-            registros_do_dia = (
-                dias_agrupados[numero_dia]
-            )
 
             punches = extrair_punches(
                 registros_do_dia
@@ -484,7 +508,7 @@ def extrair_cartao_ponto(
 
             days.append(
                 Day(
-                    date_raw=str(numero_dia),
+                    date_raw=data_raw,
                     punches=punches,
                 )
             )
@@ -496,8 +520,6 @@ def extrair_cartao_ponto(
         pages.append(
             {
                 "page": numero_pagina,
-                "year": str(ano),
-                "month": str(mes),
                 "days": days,
             }
         )

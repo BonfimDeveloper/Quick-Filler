@@ -20,6 +20,10 @@ env/
 .pytest_cache/
 .coverage
 htmlcov/
+backend/.tessdata/
+
+# Banco de dados local
+backend/quick_filler.db
 
 # ==========================================
 # Angular / Node
