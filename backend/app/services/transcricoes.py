@@ -30,6 +30,18 @@ def processar_transcricao(
 ) -> None:
     """
     Processa o PDF associado a uma transcrição.
+
+    Fluxo:
+
+        PDF
+         ↓
+    extrair texto
+         ↓
+    identificar tipo
+         ↓
+    executar parser
+         ↓
+    armazenar resultado
     """
 
     transcricao = transcricoes.get(id_transcricao)
@@ -44,12 +56,13 @@ def processar_transcricao(
 
         if tipo == "cartao-ponto":
             resultado = extrair_cartao_ponto(texto)
+
         elif tipo == "holerite":
             resultado = extrair_holerite(texto)
 
         else:
             raise ValueError(
-                f"Tipo de transcrição não suportado nesta etapa: {tipo}"
+                f"Tipo de transcrição não suportado: {tipo}"
             )
 
         transcricao["value"] = resultado.model_dump()
