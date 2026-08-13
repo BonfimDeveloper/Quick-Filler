@@ -1,0 +1,9 @@
+.venv
+__pycache__
+.pytest_cache
+.tessdata
+quick_filler.db
+uploads
+tests
+test_*.py
+resultado*.txt
