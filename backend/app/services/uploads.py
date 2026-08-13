@@ -2,7 +2,6 @@ from pathlib import Path
 
 from fastapi import HTTPException, UploadFile, status
 
-from app.config import MAX_UPLOAD_SIZE
 
 from app.config import MAX_UPLOAD_SIZE, UPLOADS_DIR
 
