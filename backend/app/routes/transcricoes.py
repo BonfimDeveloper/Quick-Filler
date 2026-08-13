@@ -11,9 +11,10 @@ from fastapi import (
 )
 
 from app.services.transcricoes import (
+    atualizar_caminho_arquivo,
     criar_transcricao,
+    obter_transcricao as obter_transcricao_service,
     processar_transcricao,
-    transcricoes,
 )
 from app.services.uploads import (
     salvar_upload,
@@ -41,11 +42,18 @@ async def criar_transcricao_endpoint(
 ):
     await validar_upload(arquivo)
 
-    id_transcricao = criar_transcricao(tipo)
+    id_transcricao = criar_transcricao(
+        tipo
+    )
 
     caminho = await salvar_upload(
         arquivo,
         id_transcricao,
+    )
+
+    atualizar_caminho_arquivo(
+        id_transcricao,
+        caminho,
     )
 
     background_tasks.add_task(
@@ -63,7 +71,7 @@ async def criar_transcricao_endpoint(
 async def obter_transcricao(
     id_transcricao: str,
 ):
-    transcricao = transcricoes.get(
+    transcricao = obter_transcricao_service(
         id_transcricao
     )
 
