@@ -5,6 +5,8 @@ from sqlalchemy import select
 from app.database import SessionLocal
 from app.extractors.cartao_ponto import extrair_cartao_ponto
 from app.extractors.holerite import extrair_holerite
+from app.models.cartao_ponto import CartaoPonto
+from app.models.holerite import Holerite
 from app.models.transcricao import Transcricao
 from app.services.pdf import extrair_texto
 from app.services.uploads import remover_upload
@@ -160,6 +162,45 @@ def listar_transcricoes() -> list[TranscricaoResumoResponse]:
             )
             for transcricao in transcricoes
         ]
+
+
+def atualizar_transcricao(
+    id_transcricao: str,
+    value: dict,
+) -> bool:
+    """Valida e substitui a transcrição pelas correções da interface."""
+
+    with SessionLocal() as db:
+        transcricao = db.get(
+            Transcricao,
+            id_transcricao,
+        )
+
+        if transcricao is None:
+            return False
+
+        if transcricao.tipo == "cartao-ponto":
+            value_validado = CartaoPonto.model_validate(
+                value
+            )
+        elif transcricao.tipo == "holerite":
+            value_validado = Holerite.model_validate(
+                value
+            )
+        else:
+            raise ValueError(
+                "Tipo de transcrição não suportado."
+            )
+
+        transcricao.value = json.dumps(
+            value_validado.model_dump(),
+            ensure_ascii=False,
+        )
+        transcricao.status = "concluido"
+        transcricao.erro = None
+        db.commit()
+
+        return True
 
 
 def excluir_transcricao(

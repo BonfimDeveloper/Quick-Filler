@@ -18,6 +18,10 @@ class TranscricaoCriadaResponse(BaseModel):
     id: str
 
 
+class TranscricaoAtualizarRequest(BaseModel):
+    value: CartaoPonto | Holerite
+
+
 class TranscricaoResumoResponse(BaseModel):
     id: str
     tipo: Literal[

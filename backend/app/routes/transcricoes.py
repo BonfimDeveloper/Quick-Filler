@@ -9,15 +9,18 @@ from fastapi import (
     UploadFile,
     status,
 )
+from fastapi.responses import Response
 
 from app.services.transcricoes import (
     atualizar_caminho_arquivo,
+    atualizar_transcricao,
     criar_transcricao,
     excluir_transcricao,
     listar_transcricoes,
     obter_transcricao as obter_transcricao_service,
     processar_transcricao,
 )
+from app.services.planilhas import gerar_planilha
 
 from app.services.uploads import (
     salvar_upload,
@@ -26,6 +29,7 @@ from app.services.uploads import (
 
 from app.schemas.transcricao import (
     TranscricaoCriadaResponse,
+    TranscricaoAtualizarRequest,
     TranscricaoDetalheResponse,
     TranscricaoResumoResponse,
 )
@@ -102,6 +106,66 @@ async def obter_transcricao(
         )
 
     return transcricao
+
+
+@router.put(
+    "/{id_transcricao}",
+    response_model=TranscricaoDetalheResponse,
+)
+async def atualizar_transcricao_endpoint(
+    id_transcricao: str,
+    dados: TranscricaoAtualizarRequest,
+):
+    atualizada = atualizar_transcricao(
+        id_transcricao,
+        dados.value.model_dump(),
+    )
+
+    if not atualizada:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Transcrição não encontrada",
+        )
+
+    return obter_transcricao_service(
+        id_transcricao
+    )
+
+
+@router.get("/{id_transcricao}/planilha")
+async def baixar_planilha(
+    id_transcricao: str,
+    formato: Literal["xlsx", "csv", "json"] = "xlsx",
+):
+    transcricao = obter_transcricao_service(
+        id_transcricao
+    )
+
+    if transcricao is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Transcrição não encontrada",
+        )
+
+    if transcricao.status != "concluido" or transcricao.value is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A transcrição ainda não está concluída",
+        )
+
+    conteudo, media_type, nome = gerar_planilha(
+        transcricao.tipo,
+        transcricao.value.model_dump(),
+        formato,
+    )
+
+    return Response(
+        content=conteudo,
+        media_type=media_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="{nome}"'
+        },
+    )
 
 
 @router.delete(

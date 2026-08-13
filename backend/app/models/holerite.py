@@ -1,4 +1,4 @@
-from typing import List, Literal
+from typing import List
 
 from pydantic import BaseModel
 
@@ -8,7 +8,6 @@ class Field(BaseModel):
     label: str
     reference: str
     value: str
-    kind: Literal["rendimento", "desconto"]
 
 
 class BaseValue(BaseModel):
@@ -20,7 +19,6 @@ class Page(BaseModel):
     page: int
     year: str
     month: str
-    sheet_type: str
     fields: List[Field]
     bases: List[BaseValue]
 

@@ -1,6 +1,14 @@
 import re
 
 from app.models.holerite import BaseValue, Field, Holerite, Page
+from app.extractors.holerite_mensal import (
+    extrair_holerite_mensal,
+    reconhece_layout as reconhece_holerite_mensal,
+)
+from app.extractors.holerite_declaracao import (
+    extrair_holerite_declaracao,
+    reconhece_layout as reconhece_holerite_declaracao,
+)
 
 
 MESES = {
@@ -777,9 +785,20 @@ def extrair_holerite(
         - bases.
     """
 
+    if reconhece_holerite_mensal(texto):
+        return extrair_holerite_mensal(texto)
+
+    if reconhece_holerite_declaracao(texto):
+        return extrair_holerite_declaracao(texto)
+
     blocos = extrair_blocos(
         texto
     )
+
+    if not blocos:
+        raise ValueError(
+            "Layout de holerite não reconhecido."
+        )
 
     pages = []
 
@@ -799,10 +818,7 @@ def extrair_holerite(
                 ),
                 month=str(
                     bloco["month"]
-                ),
-                sheet_type=bloco[
-                    "sheet_type"
-                ],
+                ).zfill(2),
                 fields=fields,
                 bases=bases,
             )
