@@ -3,6 +3,7 @@ from typing import Any
 from uuid import uuid4
 
 from app.extractors.cartao_ponto import extrair_cartao_ponto
+from app.extractors.holerite import extrair_holerite
 from app.services.pdf import extrair_texto
 
 
@@ -43,6 +44,8 @@ def processar_transcricao(
 
         if tipo == "cartao-ponto":
             resultado = extrair_cartao_ponto(texto)
+        elif tipo == "holerite":
+            resultado = extrair_holerite(texto)
 
         else:
             raise ValueError(
