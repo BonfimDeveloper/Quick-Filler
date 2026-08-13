@@ -1,138 +1,128 @@
-# from pathlib import Path
+from pathlib import Path
 
-# from app.extractors.cartao_ponto import extrair_dias
-# from app.services.pdf import extrair_texto
-
-
-# caminho = Path("uploads/f6edba40-89bf-47c4-96ff-e2808b80665b.pdf")
-
-# texto = extrair_texto(caminho)
-
-# dias = extrair_dias(texto)
-
-# print("Quantidade de dias encontrados:", len(dias))
-
-# for dia in dias:
-#     print(dia)
+from app.services.pdf import extrair_texto
+from app.extractors.cartao_ponto import extrair_cartao_ponto
 
 
-# from pathlib import Path
+caminho = Path(
+    "uploads/61adfbc4-1699-4178-8ff4-cb0fed62f3e0.pdf"
+)
 
-# from app.services.pdf import extrair_paginas
-
-
-# caminho = Path("uploads/f6edba40-89bf-47c4-96ff-e2808b80665b.pdf")
-
-# paginas = extrair_paginas(caminho)
-
-# print("Quantidade de páginas:", len(paginas))
-
-# for numero, pagina in enumerate(paginas, start=1):
-#     print()
-#     print("=" * 60)
-#     print(f"PÁGINA {numero}")
-#     print("=" * 60)
-#     print("Quantidade de caracteres:", len(pagina))
-#     print(pagina[:500])
+texto = extrair_texto(caminho)
 
 
+# =========================================================
+# DEBUG DO TEXTO EXTRAÍDO
+# =========================================================
 
-# from pathlib import Path
+print("========== PRIMEIRAS LINHAS ==========")
 
-# from app.extractors.cartao_ponto import extrair_dias
-# from app.services.pdf import extrair_paginas
+for linha in texto.splitlines()[:80]:
+    print(repr(linha))
 
-
-# caminho = Path("uploads/f6edba40-89bf-47c4-96ff-e2808b80665b.pdf")
-
-# paginas = extrair_paginas(caminho)
-
-# for numero, pagina in enumerate(paginas, start=1):
-#     dias = extrair_dias(pagina)
-
-#     print()
-#     print("=" * 60)
-#     print(f"PÁGINA {numero}")
-#     print("=" * 60)
-#     print("Quantidade de registros:", len(dias))
-
-#     for dia in dias:
-#         print(dia)
+print("======================================")
 
 
+# =========================================================
+# EXECUTA O PARSER
+# =========================================================
 
-# from pathlib import Path
-
-# from app.extractors.cartao_ponto import extrair_dias, agrupar_dias
-# from app.services.pdf import extrair_paginas
-
-
-# caminho = Path("uploads/f6edba40-89bf-47c4-96ff-e2808b80665b.pdf")
-
-# paginas = extrair_paginas(caminho)
-
-# for numero, pagina in enumerate(paginas, start=1):
-#     registros = extrair_dias(pagina)
-#     dias = agrupar_dias(registros)
-
-#     print()
-#     print("=" * 60)
-#     print(f"PÁGINA {numero}")
-#     print("=" * 60)
-#     print("Quantidade de dias:", len(dias))
-
-#     for numero_dia, registros_dia in dias.items():
-#         print()
-#         print(f"Dia {numero_dia}:")
-
-#         for registro in registros_dia:
-#             print("  ", registro)
+resultado = extrair_cartao_ponto(texto)
 
 
+# =========================================================
+# MOSTRA TODAS AS BATIDAS ENCONTRADAS
+# =========================================================
 
-
-# from pathlib import Path
-
-# from app.extractors.cartao_ponto import (
-#     extrair_dias,
-#     agrupar_dias,
-#     extrair_horarios,
-# )
-
-# from app.services.pdf import extrair_paginas
-
-
-# caminho = Path("uploads/f6edba40-89bf-47c4-96ff-e2808b80665b.pdf")
-
-# paginas = extrair_paginas(caminho)
-
-# for numero, pagina in enumerate(paginas, start=1):
-#     registros = extrair_dias(pagina)
-#     dias = agrupar_dias(registros)
-
-#     print()
-#     print("=" * 60)
-#     print(f"PÁGINA {numero}")
-#     print("=" * 60)
-
-#     for numero_dia, registros_dia in dias.items():
-#         print()
-#         print(f"Dia {numero_dia}:")
-
-#         for registro in registros_dia:
-#             horarios = extrair_horarios(registro)
-
-#             print("  Registro:", registro)
-#             print("  Horários:", horarios)
-
-for numero_dia, registros_dia in dias.items():
-    punches = extrair_punches(registros_dia)
+for page in resultado.pages:
 
     print()
-    print(f"Dia {numero_dia}:")
+    print(f"===== PÁGINA {page.page} =====")
+    print(f"Mês/Ano: {page.month}/{page.year}")
 
-    for punch in punches:
-        print(
-            f"  {punch.kind} - "
-            f"{punch.time_hhmm}"
+    for day in page.days:
+
+        if not day.punches:
+            continue
+
+        horarios = " | ".join(
+            f"{p.kind} {p.time_hhmm}"
+            for p in day.punches
         )
+
+        print(
+            f"Dia {day.date_raw}: {horarios}"
+        )
+
+
+# =========================================================
+# CASOS IMPORTANTES PARA CONFERÊNCIA
+# =========================================================
+
+casos_para_testar = {
+    (7, 2012): {1, 2, 4, 17, 27},
+    (8, 2012): {15},
+    (9, 2012): {19, 20, 24},
+    (10, 2012): {2, 17},
+    (11, 2012): {23},
+}
+
+
+print()
+print("========== CASOS PARA CONFERÊNCIA ==========")
+
+for page in resultado.pages:
+
+    chave = (
+        int(page.month),
+        int(page.year),
+    )
+
+    dias_interesse = casos_para_testar.get(
+        chave
+    )
+
+    if not dias_interesse:
+        continue
+
+    print()
+    print(
+        f"--- {page.month}/{page.year} ---"
+    )
+
+    for day in page.days:
+
+        numero_dia = int(
+            day.date_raw
+        )
+
+        if numero_dia not in dias_interesse:
+            continue
+
+        if day.punches:
+
+            horarios = " | ".join(
+                f"{p.kind} {p.time_hhmm}"
+                for p in day.punches
+            )
+
+        else:
+            horarios = "SEM BATIDAS"
+
+        print(
+            f"Dia {day.date_raw}: {horarios}"
+        )
+
+
+# =========================================================
+# JSON COMPLETO
+# =========================================================
+
+print()
+print("========== JSON ==========")
+
+print(
+    resultado.model_dump_json(
+        indent=2
+    )
+)

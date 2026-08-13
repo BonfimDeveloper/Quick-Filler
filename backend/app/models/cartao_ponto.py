@@ -16,6 +16,8 @@ class Day(BaseModel):
 
 class Page(BaseModel):
     page: int
+    year: str
+    month: str
     days: List[Day]
 
 
