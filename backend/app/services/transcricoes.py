@@ -1,15 +1,19 @@
 import json
 from pathlib import Path
 from uuid import uuid4
-
 from sqlalchemy import select
-
 from app.database import SessionLocal
 from app.extractors.cartao_ponto import extrair_cartao_ponto
 from app.extractors.holerite import extrair_holerite
 from app.models.transcricao import Transcricao
 from app.services.pdf import extrair_texto
 from app.services.uploads import remover_upload
+from app.schemas.transcricao import (
+    TranscricaoCartaoPontoResponse,
+    TranscricaoCriadaResponse,
+    TranscricaoHoleriteResponse,
+    TranscricaoResumoResponse,
+)
 
 
 def criar_transcricao(
@@ -50,11 +54,18 @@ def criar_transcricao(
 
 def obter_transcricao(
     id_transcricao: str,
-) -> dict | None:
+) -> (
+    TranscricaoCartaoPontoResponse
+    | TranscricaoHoleriteResponse
+    | None
+):
     """
     Busca uma transcrição pelo ID.
 
-    Retorna None caso ela não exista.
+    Retorna:
+        TranscricaoCartaoPontoResponse
+        TranscricaoHoleriteResponse
+        None, caso não exista.
     """
 
     with SessionLocal() as db:
@@ -73,13 +84,28 @@ def obter_transcricao(
                 transcricao.value
             )
 
-        return {
-            "id": transcricao.id,
-            "tipo": transcricao.tipo,
-            "status": transcricao.status,
-            "erro": transcricao.erro,
-            "value": value,
-        }
+        if transcricao.tipo == "cartao-ponto":
+            return TranscricaoCartaoPontoResponse(
+                id=transcricao.id,
+                tipo="cartao-ponto",
+                status=transcricao.status,
+                erro=transcricao.erro,
+                value=value,
+            )
+
+        if transcricao.tipo == "holerite":
+            return TranscricaoHoleriteResponse(
+                id=transcricao.id,
+                tipo="holerite",
+                status=transcricao.status,
+                erro=transcricao.erro,
+                value=value,
+            )
+
+        raise ValueError(
+            "Tipo de transcrição não suportado: "
+            f"{transcricao.tipo}"
+        )
 
 
 def atualizar_caminho_arquivo(
@@ -106,13 +132,12 @@ def atualizar_caminho_arquivo(
         db.commit()
 
 
-def listar_transcricoes() -> list[dict]:
+def listar_transcricoes() -> list[TranscricaoResumoResponse]:
     """
     Lista todas as transcrições cadastradas.
 
-    A listagem retorna apenas informações resumidas.
-    O conteúdo completo de "value" continua disponível
-    no GET por ID.
+    Retorna:
+        Lista de TranscricaoResumoResponse.
     """
 
     with SessionLocal() as db:
@@ -125,17 +150,16 @@ def listar_transcricoes() -> list[dict]:
         transcricoes = resultado.scalars().all()
 
         return [
-            {
-                "id": transcricao.id,
-                "tipo": transcricao.tipo,
-                "status": transcricao.status,
-                "erro": transcricao.erro,
-                "created_at": transcricao.created_at,
-                "updated_at": transcricao.updated_at,
-            }
+            TranscricaoResumoResponse(
+                id=transcricao.id,
+                tipo=transcricao.tipo,
+                status=transcricao.status,
+                erro=transcricao.erro,
+                created_at=transcricao.created_at,
+                updated_at=transcricao.updated_at,
+            )
             for transcricao in transcricoes
         ]
-
 
 
 def excluir_transcricao(

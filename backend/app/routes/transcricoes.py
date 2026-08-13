@@ -24,6 +24,12 @@ from app.services.uploads import (
     validar_upload,
 )
 
+from app.schemas.transcricao import (
+    TranscricaoCriadaResponse,
+    TranscricaoDetalheResponse,
+    TranscricaoResumoResponse,
+)
+
 
 router = APIRouter(
     prefix="/api/transcricoes",
@@ -34,6 +40,7 @@ router = APIRouter(
 @router.post(
     "",
     status_code=status.HTTP_202_ACCEPTED,
+     response_model=TranscricaoCriadaResponse,
 )
 async def criar_transcricao_endpoint(
     background_tasks: BackgroundTasks,
@@ -69,12 +76,18 @@ async def criar_transcricao_endpoint(
         "id": id_transcricao,
     }
 
-@router.get("")
+@router.get(
+    "",
+    response_model=list[TranscricaoResumoResponse],
+)
 async def listar_transcricoes_endpoint():
     return listar_transcricoes()
 
 
-@router.get("/{id_transcricao}")
+@router.get(
+    "/{id_transcricao}",
+    response_model=TranscricaoDetalheResponse,
+)
 async def obter_transcricao(
     id_transcricao: str,
 ):
