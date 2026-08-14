@@ -31,6 +31,10 @@ O pipeline de upload, processamento, revisão e download é compartilhado entre 
 - Demonstrativo mensal (`payroll-03`).
 - PDFs escaneados passam por OCR; layouts ainda não suportados terminam com erro legível, sem produzir dados vazios como sucesso.
 
+## Planilhas de exemplo
+
+As planilhas produzidas pelo fluxo completo estão em `exemplos-gerados/`. A pasta contém os arquivos XLSX dos quatro layouts suportados e um README que relaciona os exemplos ainda não convertidos devido ao corte de escopo documentado.
+
 ## Honestidade e validação
 
 - Valores monetários permanecem strings no formato impresso.

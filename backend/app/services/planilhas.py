@@ -4,7 +4,8 @@ from datetime import date, timedelta
 from io import BytesIO, StringIO
 
 from openpyxl import Workbook
-from openpyxl.styles import Border, Font, PatternFill, Side
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
 
 from app.models.cartao_ponto import CartaoPonto
 from app.models.holerite import Holerite
@@ -226,6 +227,27 @@ def gerar_xlsx(tipo: str, value: dict) -> bytes:
     for cell in worksheet[1]:
         cell.fill = preenchimento
         cell.font = Font(color="FFFFFF", bold=True)
+        cell.alignment = Alignment(
+            horizontal="center",
+            vertical="center",
+            wrap_text=True,
+        )
+
+    worksheet.row_dimensions[1].height = 42
+
+    for indice, coluna in enumerate(
+        worksheet.iter_cols(),
+        start=1,
+    ):
+        maior_conteudo = max(
+            len(str(cell.value))
+            if cell.value is not None
+            else 0
+            for cell in coluna
+        )
+        worksheet.column_dimensions[
+            get_column_letter(indice)
+        ].width = min(max(maior_conteudo + 2, 10), 32)
 
     if tipo == "cartao-ponto":
         avisos = avisos_cartao(
@@ -264,6 +286,7 @@ def gerar_xlsx(tipo: str, value: dict) -> bytes:
             )
 
     worksheet.freeze_panes = "A2"
+    worksheet.auto_filter.ref = worksheet.dimensions
     arquivo = BytesIO()
     workbook.save(arquivo)
 

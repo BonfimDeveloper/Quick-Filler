@@ -60,6 +60,10 @@ def test_xlsx_holerite_transpoe_verbas_e_formata_cabecalho():
     ]
     assert worksheet.cell(2, 4).value == "1.000,00"
     assert worksheet.cell(1, 1).fill.fgColor.rgb == "00173772"
+    assert worksheet.cell(1, 1).alignment.wrap_text is True
+    assert worksheet.row_dimensions[1].height == 42
+    assert worksheet.column_dimensions["D"].width >= 10
+    assert worksheet.auto_filter.ref == "A1:D2"
 
 
 def test_avisos_cartao_priorizam_data_nao_sequencial():
