@@ -18,3 +18,7 @@ DATABASE_PATH = Path(
 
 TESSERACT_CMD = os.getenv("TESSERACT_CMD")
 TESSDATA_DIR = os.getenv("TESSDATA_DIR")
+
+RETENTION_HOURS = int(
+    os.getenv("RETENTION_HOURS", "24")
+)

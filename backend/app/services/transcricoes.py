@@ -1,8 +1,10 @@
 import json
+from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 from sqlalchemy import select
 from app.database import SessionLocal
+from app.config import RETENTION_HOURS
 from app.extractors.cartao_ponto import extrair_cartao_ponto
 from app.extractors.holerite import extrair_holerite
 from app.models.cartao_ponto import CartaoPonto
@@ -52,6 +54,36 @@ def criar_transcricao(
         db.commit()
 
     return id_transcricao
+
+
+def limpar_transcricoes_expiradas() -> int:
+    """Remove registros e PDFs além da política de retenção."""
+
+    limite = datetime.now() - timedelta(
+        hours=RETENTION_HOURS
+    )
+    removidas = 0
+
+    with SessionLocal() as db:
+        resultado = db.execute(
+            select(Transcricao).where(
+                Transcricao.updated_at < limite
+            )
+        )
+
+        for transcricao in resultado.scalars():
+            if transcricao.caminho_arquivo:
+                remover_upload(
+                    Path(transcricao.caminho_arquivo)
+                )
+
+            db.delete(transcricao)
+            removidas += 1
+
+        if removidas:
+            db.commit()
+
+    return removidas
 
 
 def obter_transcricao(

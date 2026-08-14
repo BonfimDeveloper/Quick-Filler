@@ -6,6 +6,7 @@ services:
       DATABASE_PATH: /data/quick_filler.db
       UPLOADS_DIR: /data/uploads
       MAX_UPLOAD_SIZE: 10485760
+      RETENTION_HOURS: 24
     volumes:
       - quick_filler_data:/data
     healthcheck:

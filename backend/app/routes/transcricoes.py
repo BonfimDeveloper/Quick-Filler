@@ -17,6 +17,7 @@ from app.services.transcricoes import (
     criar_transcricao,
     excluir_transcricao,
     listar_transcricoes,
+    limpar_transcricoes_expiradas,
     obter_transcricao as obter_transcricao_service,
     processar_transcricao,
 )
@@ -54,6 +55,7 @@ async def criar_transcricao_endpoint(
         "holerite",
     ] = Form(...),
 ):
+    limpar_transcricoes_expiradas()
     await validar_upload(arquivo)
 
     id_transcricao = criar_transcricao(
@@ -85,6 +87,7 @@ async def criar_transcricao_endpoint(
     response_model=list[TranscricaoResumoResponse],
 )
 async def listar_transcricoes_endpoint():
+    limpar_transcricoes_expiradas()
     return listar_transcricoes()
 
 
