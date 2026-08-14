@@ -18,7 +18,7 @@ Acompanhei as mudanças em tempo real, executei os caminhos felizes pelo Swagger
 3. **O corpo inicial do PUT era genérico.** O Swagger sugeriu `additionalProp1`, o serviço lançou erro 500 e o teste manual revelou o problema. O request foi tipado com `CartaoPonto | Holerite`, fazendo entradas inválidas retornarem 422.
 4. **A instalação do Tesseract no Windows informou português disponível, mas o arquivo tinha zero bytes.** A falha apareceu somente no OCR real. O modelo oficial foi usado localmente e o container instala `tesseract-ocr-por` de forma reproduzível.
 
->**O que foi reescrito ou decidido manualmente**
+## O que foi reescrito ou decidido manualmente
 
 Utilizei IA para escrever uma parte significativa do código, mas acompanhei todo o processo e conduzi o desenvolvimento com base nos requisitos do desafio. Defini prioridades, autorizei as alterações, revisei a interface e validei manualmente os principais fluxos da aplicação: upload, processamento, revisão dos dados, edição e download das planilhas.
 
@@ -28,7 +28,7 @@ Eu estava há algum tempo sem programar desde o encerramento do meu estágio e v
 
 Ao longo do desenvolvimento, percebi que muitos conceitos começaram a se conectar novamente. Este foi o desafio técnico mais complexo que já realizei. A IA foi especialmente importante na implementação do backend, que era a área em que eu tinha menos experiência. No frontend, principalmente com Angular, eu já possuía mais familiaridade, mas também optei pela assistência da IA para ganhar tempo e manter o foco na entrega completa da solução.
 
-> **Três decisões com mais de uma resposta razoável**
+## 1. Três decisões com mais de uma resposta razoável
 
 Durante o desenvolvimento, utilizei IA para acelerar a escrita do código, mas acompanhei cada etapa e verifiquei se o resultado atendia às regras do desafio. Entre as decisões que poderiam ter sido resolvidas de outras maneiras, destaco:
 
@@ -39,18 +39,6 @@ Criar estratégias de extração específicas para cada layout: outra possibilid
 Utilizar SQLite e processamento em segundo plano dentro da aplicação: em um ambiente de produção com maior volume, seria possível utilizar PostgreSQL e uma fila externa, como Celery ou RabbitMQ. Para o escopo do desafio, escolhi uma arquitetura mais simples, que atende ao caminho feliz e pode ser executada facilmente pelo avaliador com Docker.
 
 Depois de observar a velocidade com que algumas partes foram implementadas, entendi que a IA pode reduzir bastante o tempo gasto escrevendo código. Ao mesmo tempo, ficou claro que ainda cabe ao desenvolvedor compreender os requisitos, avaliar as decisões, identificar resultados incorretos e assumir a responsabilidade pela solução entregue.
-
-### OCR local com Tesseract
-
-Um serviço de nuvem poderia oferecer melhor reconhecimento, mas exigiria segredo, custo e envio de documentos pessoais a terceiros. Tesseract permite execução local, Docker reproduzível e política de privacidade mais simples. A contrapartida é menor precisão em manuscritos.
-
-### SQLite e BackgroundTasks
-
-Redis, Celery ou outro sistema de filas seria mais robusto. Para o tempo do desafio e uma única instância, SQLite e `BackgroundTasks` mantêm o ciclo assíncrono simples e demonstrável. A limitação está explícita e não é apresentada como arquitetura de grande escala.
-
-### Estratégias por layout
-
-Um regex universal teria menos arquivos, mas misturaria exceções e dificultaria adicionar um layout durante a etapa ao vivo. Estratégias detectáveis e isoladas repetem alguma estrutura, porém protegem o contrato comum e falham explicitamente quando não reconhecem o documento.
 
 ## 2. O que quebra primeiro em produção?
 
