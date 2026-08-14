@@ -1,15 +1,123 @@
 import csv
 import json
+from datetime import date, timedelta
 from io import BytesIO, StringIO
 
 from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill
+from openpyxl.styles import Border, Font, PatternFill, Side
 
 from app.models.cartao_ponto import CartaoPonto
 from app.models.holerite import Holerite
 
 
 COR_CABECALHO = "173772"
+COR_AVISO = "FFF3CD"
+COR_SEQUENCIA = "F8D7DA"
+COR_BORDA_SEQUENCIA = "DC3545"
+
+
+def contem_incerteza(value: object) -> bool:
+    return "?" in json.dumps(
+        value,
+        ensure_ascii=False,
+    )
+
+
+def interpretar_data(value: str) -> date | int | None:
+    if "?" in value:
+        return None
+
+    if value.isdigit():
+        return int(value)
+
+    for separador in ("/", "-"):
+        partes = value.split(separador)
+
+        if len(partes) == 3 and all(
+            parte.isdigit() for parte in partes
+        ):
+            dia, mes, ano = map(int, partes)
+
+            try:
+                return date(ano, mes, dia)
+            except ValueError:
+                return None
+
+    return None
+
+
+def avisos_cartao(cartao: CartaoPonto) -> list[str | None]:
+    avisos = []
+
+    for page in cartao.pages:
+        anterior: date | int | None = None
+
+        for day in page.days:
+            atual = interpretar_data(day.date_raw)
+            sequencia_invalida = False
+
+            if atual is not None and anterior is not None:
+                esperado = (
+                    anterior + timedelta(days=1)
+                    if isinstance(anterior, date)
+                    else anterior + 1
+                )
+                sequencia_invalida = atual != esperado
+
+            if atual is not None:
+                anterior = atual
+
+            if sequencia_invalida:
+                avisos.append("sequencia")
+            elif len(day.punches) % 2 != 0 or contem_incerteza(
+                day.model_dump()
+            ):
+                avisos.append("aviso")
+            else:
+                avisos.append(None)
+
+    return avisos
+
+
+def avisos_holerite(holerite: Holerite) -> list[str | None]:
+    avisos = []
+    anterior: tuple[int, int] | None = None
+
+    for page in holerite.pages:
+        atual = None
+
+        if page.month.isdigit() and page.year.isdigit():
+            mes = int(page.month)
+            ano = int(page.year)
+
+            if 1 <= mes <= 12:
+                atual = (ano, mes)
+
+        sequencia_invalida = False
+
+        if atual is not None and anterior is not None:
+            ano_anterior, mes_anterior = anterior
+            esperado = (
+                (ano_anterior + 1, 1)
+                if mes_anterior == 12
+                else (ano_anterior, mes_anterior + 1)
+            )
+            sequencia_invalida = atual != esperado
+
+        if atual is not None:
+            anterior = atual
+
+        if sequencia_invalida:
+            avisos.append("sequencia")
+        elif (
+            not page.fields
+            and not page.bases
+        ) or contem_incerteza(page.model_dump()):
+            avisos.append("aviso")
+        else:
+            avisos.append(None)
+
+    return avisos
 
 
 def linhas_cartao(
@@ -118,6 +226,42 @@ def gerar_xlsx(tipo: str, value: dict) -> bytes:
     for cell in worksheet[1]:
         cell.fill = preenchimento
         cell.font = Font(color="FFFFFF", bold=True)
+
+    if tipo == "cartao-ponto":
+        avisos = avisos_cartao(
+            CartaoPonto.model_validate(value)
+        )
+    else:
+        avisos = avisos_holerite(
+            Holerite.model_validate(value)
+        )
+
+    for numero_linha, aviso in enumerate(
+        avisos,
+        start=2,
+    ):
+        if aviso is None:
+            continue
+
+        cor = (
+            COR_SEQUENCIA
+            if aviso == "sequencia"
+            else COR_AVISO
+        )
+
+        for cell in worksheet[numero_linha]:
+            cell.fill = PatternFill(
+                fill_type="solid",
+                fgColor=cor,
+            )
+
+        if aviso == "sequencia":
+            worksheet.cell(numero_linha, 1).border = Border(
+                left=Side(
+                    style="thick",
+                    color=COR_BORDA_SEQUENCIA,
+                )
+            )
 
     worksheet.freeze_panes = "A2"
     arquivo = BytesIO()

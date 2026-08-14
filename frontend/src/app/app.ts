@@ -168,14 +168,76 @@ export class App implements OnDestroy {
     window.location.href = `/api/transcricoes/${id}/planilha?formato=${formato}`;
   }
 
-  protected linhaCartaoTemAviso(day: Day): boolean {
-    return day.date_raw.includes('?') || day.punches.some((p) => p.time_raw.includes('?')) || day.punches.length % 2 !== 0;
+  protected avisoCartao(page: TimeCardPage, indice: number): { tipo: 'warning' | 'sequence'; motivo: string } | null {
+    const day = page.days[indice];
+    const atual = this.valorData(day.date_raw);
+    let anterior: number | null = null;
+
+    for (let i = indice - 1; i >= 0; i--) {
+      anterior = this.valorData(page.days[i].date_raw);
+      if (anterior !== null) break;
+    }
+
+    if (atual !== null && anterior !== null && atual !== anterior + 1) {
+      return { tipo: 'sequence', motivo: 'Data não sequencial' };
+    }
+
+    if (day.punches.length % 2 !== 0) {
+      return { tipo: 'warning', motivo: 'Número ímpar de batidas' };
+    }
+
+    if (day.date_raw.includes('?') || day.punches.some((p) => p.time_raw.includes('?') || p.time_hhmm.includes('?'))) {
+      return { tipo: 'warning', motivo: 'Há caracteres que precisam de revisão' };
+    }
+
+    return null;
   }
 
-  protected linhaHoleriteTemAviso(page: PayrollPage): boolean {
-    return [...page.fields, ...page.bases].some((item) =>
+  protected avisoHolerite(indice: number): { tipo: 'warning' | 'sequence'; motivo: string } | null {
+    const pages = this.paginasHolerite();
+    const page = pages[indice];
+    const atual = this.valorCompetencia(page);
+    let anterior: number | null = null;
+
+    for (let i = indice - 1; i >= 0; i--) {
+      anterior = this.valorCompetencia(pages[i]);
+      if (anterior !== null) break;
+    }
+
+    if (atual !== null && anterior !== null && atual !== anterior + 1) {
+      return { tipo: 'sequence', motivo: 'Mês não sequencial' };
+    }
+
+    if (page.fields.length === 0 && page.bases.length === 0) {
+      return { tipo: 'warning', motivo: 'Página sem dados extraídos' };
+    }
+
+    if ([...page.fields, ...page.bases].some((item) =>
       Object.values(item).some((value) => String(value).includes('?')),
-    );
+    )) {
+      return { tipo: 'warning', motivo: 'Há caracteres que precisam de revisão' };
+    }
+
+    return null;
+  }
+
+  private valorData(value: string): number | null {
+    if (value.includes('?')) return null;
+    if (/^\d+$/.test(value)) return Number(value);
+    const match = value.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+    if (!match) return null;
+    const [, day, month, year] = match.map(Number);
+    const parsed = new Date(Date.UTC(year, month - 1, day));
+    if (parsed.getUTCFullYear() !== year || parsed.getUTCMonth() !== month - 1 || parsed.getUTCDate() !== day) return null;
+    return Math.floor(parsed.getTime() / 86_400_000);
+  }
+
+  private valorCompetencia(page: PayrollPage): number | null {
+    const month = Number(page.month);
+    const year = Number(page.year);
+    return Number.isInteger(month) && month >= 1 && month <= 12 && Number.isInteger(year)
+      ? year * 12 + month - 1
+      : null;
   }
 
   private falhar(error: any): void {

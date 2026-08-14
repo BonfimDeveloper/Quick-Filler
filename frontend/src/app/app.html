@@ -71,12 +71,12 @@
                 <table>
                   <thead><tr><th>Data</th><th>Tipo</th><th>Horário original</th><th>Horário</th></tr></thead>
                   <tbody>
-                    @for (day of page.days; track $index) {
+                    @for (day of page.days; track $index; let dayIndex = $index) {
                       @if (day.punches.length === 0) {
-                        <tr [class.warning]="linhaCartaoTemAviso(day)"><td><input [(ngModel)]="day.date_raw" /></td><td colspan="3" class="empty">Sem batidas</td></tr>
+                        <tr [class.warning]="avisoCartao(page, dayIndex)?.tipo === 'warning'" [class.sequence]="avisoCartao(page, dayIndex)?.tipo === 'sequence'" [title]="avisoCartao(page, dayIndex)?.motivo || ''"><td><input [(ngModel)]="day.date_raw" /></td><td colspan="3" class="empty">Sem batidas</td></tr>
                       } @else {
                         @for (punch of day.punches; track $index; let first = $first) {
-                          <tr [class.warning]="linhaCartaoTemAviso(day)">
+                          <tr [class.warning]="avisoCartao(page, dayIndex)?.tipo === 'warning'" [class.sequence]="avisoCartao(page, dayIndex)?.tipo === 'sequence'" [title]="avisoCartao(page, dayIndex)?.motivo || ''">
                             <td>@if (first) { <input [(ngModel)]="day.date_raw" /> }</td>
                             <td><select [(ngModel)]="punch.kind"><option value="IN">Entrada</option><option value="OUT">Saída</option></select></td>
                             <td><input [(ngModel)]="punch.time_raw" /></td>
@@ -90,8 +90,8 @@
               </div>
             }
           } @else {
-            @for (page of paginasHolerite(); track page.page) {
-              <div class="page-label" [class.warning-label]="linhaHoleriteTemAviso(page)">Página {{ page.page }} · {{ page.month }}/{{ page.year }}</div>
+            @for (page of paginasHolerite(); track page.page; let pageIndex = $index) {
+              <div class="page-label" [class.warning-label]="avisoHolerite(pageIndex)?.tipo === 'warning'" [class.sequence-label]="avisoHolerite(pageIndex)?.tipo === 'sequence'" [title]="avisoHolerite(pageIndex)?.motivo || ''">Página {{ page.page }} · {{ page.month }}/{{ page.year }} @if (avisoHolerite(pageIndex)) { <span class="reason">{{ avisoHolerite(pageIndex)?.motivo }}</span> }</div>
               <div class="table-scroll">
                 <table>
                   <thead><tr><th>Código</th><th>Descrição</th><th>Referência</th><th>Valor</th></tr></thead>

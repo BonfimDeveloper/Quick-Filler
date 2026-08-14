@@ -46,6 +46,11 @@ table { width: 100%; border-collapse: collapse; font-size: 12px; }
 th { padding: 10px 12px; background: #173772; color: #fff; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
 td { padding: 4px 7px; border-bottom: 1px solid #edf0f1; }
 tr.warning td { background: #fff3cd; }
+tr.sequence td { background: #f8d7da; }
+tr.sequence td:first-child { border-left: 4px solid #dc3545; }
+.warning-label { background: #fff3cd; color: #6d5815; }
+.sequence-label { background: #f8d7da; color: #8e2933; border-left: 4px solid #dc3545; }
+.reason { float: right; font-weight: 650; text-transform: none; }
 input, select { width: 100%; box-sizing: border-box; border: 1px solid transparent; border-radius: 5px; background: transparent; padding: 7px 6px; color: #243640; font: inherit; }
 input:hover, input:focus, select:hover, select:focus { border-color: #9bb4b8; background: #fff; outline: none; }
 input.short { min-width: 60px; } input.money { min-width: 85px; text-align: right; }
