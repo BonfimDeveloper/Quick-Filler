@@ -1,0 +1,17 @@
+:{$PORT:80} {
+    root * /srv
+    encode gzip
+
+    handle /api/* {
+        reverse_proxy backend.railway.internal:8000
+    }
+
+    handle /healthz {
+        reverse_proxy backend.railway.internal:8000
+    }
+
+    handle {
+        try_files {path} /index.html
+        file_server
+    }
+}
