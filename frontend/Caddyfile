@@ -3,11 +3,11 @@
     encode gzip
 
     handle /api/* {
-        reverse_proxy backend.railway.internal:8000
+        reverse_proxy {$BACKEND_HOST:backend.railway.internal}:8000
     }
 
     handle /healthz {
-        reverse_proxy backend.railway.internal:8000
+        respond "OK" 200
     }
 
     handle {
