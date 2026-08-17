@@ -9,6 +9,10 @@ services:
       RETENTION_HOURS: 24
     volumes:
       - quick_filler_data:/data
+    networks:
+      default:
+        aliases:
+          - backend.railway.internal
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
       interval: 10s
