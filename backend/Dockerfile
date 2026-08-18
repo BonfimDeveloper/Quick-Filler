@@ -22,4 +22,4 @@ RUN mkdir -p /data/uploads
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "::", "--port", "8000"]
+CMD ["python", "-m", "app.server"]
