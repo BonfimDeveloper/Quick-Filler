@@ -8,9 +8,13 @@ Pré-requisito: Docker Desktop com suporte a WSL 2.
 docker compose up --build
 ```
 
-A aplicação fica disponível em `http://localhost:8080`. O Nginx serve o Angular e encaminha `/api` ao FastAPI. O endpoint de saúde é `GET /healthz`.
+A aplicação fica disponível em `http://localhost:8080`. O Caddy serve o Angular e encaminha `/api` ao FastAPI. O endpoint de saúde é `GET /healthz`.
 
 Para desenvolvimento sem Docker, execute o FastAPI em `backend/` e `npm start` em `frontend/`. O proxy do Angular aponta para `127.0.0.1:8000`.
+
+## Aplicação publicada
+
+A versão de demonstração está disponível em [frontend-production-2716.up.railway.app](https://frontend-production-2716.up.railway.app). O frontend e o backend são publicados como serviços separados no Railway e se comunicam pela rede privada da plataforma. Banco e uploads persistem em um volume conectado ao backend.
 
 ## Arquitetura
 
